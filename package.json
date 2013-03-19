@@ -1,0 +1,21 @@
+{
+  "name": "otogumo",
+  "version": "0.0.1",
+  "description": "soundcloud API library for node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha test/test_oauth.coffee"
+  },
+  "repository": "https://github.com/ksato9700/otogumo.git",
+  "author": "Kenichi Sato",
+  "license": "BSD",
+  "devDependencies": {
+    "coffee-script": "~1.6.2",
+    "mocha": "~1.8.2",
+    "chai": "~1.5.0",
+    "nock": "~0.16.0"
+  },
+  "dependencies": {
+    "request": "~2.16.2"
+  }
+}
