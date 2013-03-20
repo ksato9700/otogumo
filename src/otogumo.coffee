@@ -4,7 +4,9 @@
 request = require 'request'
 
 AUTHZ_URL = 'https://soundcloud.com/connect'
-TOKEN_URL = 'https://api.soundcloud.com/oauth2/token'
+
+API_URL_BASE = 'https://api.soundcloud.com'
+TOKEN_URL = API_URL_BASE + '/oauth2/token'
 
 class Client
   constructor: (@client_id, @client_secret)->
