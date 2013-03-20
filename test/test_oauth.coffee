@@ -32,7 +32,7 @@ describe 'Oauth', ->
           scope: SCOPE
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
       client.get_token_by_credentials USERNAME, PASSWORD, (err)->
-        assert.equal err, null
+        assert.isNull err
         assert.equal client.access_token, 'my-access-token'
         assert.equal client.expires_in, 'my-expires-in'
         assert.equal client.refresh_token, 'my-refresh-token'

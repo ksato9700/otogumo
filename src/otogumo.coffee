@@ -6,26 +6,12 @@ request = require 'request'
 AUTHZ_URL = 'https://soundcloud.com/connect'
 
 API_URL_BASE = 'https://api.soundcloud.com'
-TOKEN_URL = API_URL_BASE + '/oauth2/token'
 
 class Client
   constructor: (@client_id, @client_secret)->
 
-  get_token_by_credentials: (username, password, scope, cb)->
-    if typeof scope is 'function'
-      cb = scope
-      scope = null
-    options =
-      method: 'POST'
-      form:
-        client_id: @client_id
-        client_secret: @client_secret
-        username: username
-        password: password
-        scope: scope || ''
-        grant_type: 'password'
-
-    request TOKEN_URL, options, (err, resp, body)=>
+  _make_request: (url, options, cb)->
+    request url, options, (err, resp, body)=>
       if err
         cb err
       else
@@ -33,10 +19,42 @@ class Client
         if resp.statusCode isnt 200
           cb body
         else
-          @access_token = body.access_token
-          @expires_in = body.expires_in
-          @scope = body.scope
-          @refresh_token = body.refresh_token
-          cb err
+          cb null, body
+
+  _api_make_request: (path, options, cb)->
+    @_make_request API_URL_BASE + path, options, cb
+
+  _api_get: (path, args, cb)->
+    @_api_make_request path, {method: 'GET', qs: args},  cb
+
+  _api_post: (path, args, cb)->
+    @_api_make_request path, {method: 'POST', form: args}, cb
+
+  get_token_by_credentials: (username, password, scope, cb)->
+    if typeof scope is 'function'
+      cb = scope
+      scope = null
+
+    args =
+      client_id: @client_id
+      client_secret: @client_secret
+      username: username
+      password: password
+      scope: scope || ''
+      grant_type: 'password'
+
+    @_api_post '/oauth2/token', args, (err, data)=>
+      if not err
+        @access_token = data.access_token
+        @expires_in = data.expires_in
+        @scope = data.scope
+        @refresh_token = data.refresh_token
+      cb err
+
+  get_me: (cb)->
+    if not @access_token
+      cb 'need to auth first'
+      return
+    @_api_get '/me.json', {oauth_token: @access_token}, cb
 
 exports.Client = Client

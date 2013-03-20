@@ -14,4 +14,8 @@ password = process.argv[3]
 console.log username, password
 client.get_token_by_credentials username, password, (err)->
   console.log err
+  client.get_me (err, data)->
+    console.log err
+    console.log data
+
 

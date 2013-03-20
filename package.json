@@ -4,7 +4,7 @@
   "description": "soundcloud API library for node.js",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha test/test_oauth.coffee"
+    "test": "./node_modules/.bin/mocha test/test_*.coffee"
   },
   "repository": "https://github.com/ksato9700/otogumo.git",
   "author": "Kenichi Sato",
