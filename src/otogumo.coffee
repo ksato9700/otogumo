@@ -115,7 +115,7 @@ class Client
           cb err
       else
         [@access_token, @expires, @refresh_token] = data
-        cb null
+        cb()
 
   get_me: (cb)->
     if not @access_token

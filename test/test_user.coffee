@@ -40,7 +40,7 @@ describe 'User', ->
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
 
       client.get_token_by_credentials USERNAME, PASSWORD, (err)->
-        assert.isNull err
+        assert.isUndefined err
         client.get_me (err, data)->
           assert.isNull err
           assert.equal data.id, 1234567890
