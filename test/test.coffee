@@ -9,18 +9,17 @@ redirect_uri = process.env.SC_REDIRECT_URI
 
 client = new otogumo.Client client_id, client_secret
 
-# username = process.argv[2]
-# password = process.argv[3]
-# console.log username, password
-# client.get_token_by_credentials username, password, (err)->
-#   console.log err
-#   client.get_me (err, data)->
-#     console.log err
-#     console.log data
+username = process.argv[2]
+password = process.argv[3]
 
-console.log client.authorize_url(redirect_uri)
+client.get_token_by_credentials username, password, (err)->
+  console.log client.access_token
+  client.get_me (err, data)->
+    console.log data.full_name
 
-code = process.argv[2]
-client.exchange_token code, redirect_uri, (err)->
- console.log err
- console.log client.access_token
+# console.log client.authorize_url(redirect_uri)
+
+# code = process.argv[2]
+# client.exchange_token code, redirect_uri, (err)->
+#  console.log err
+#  console.log client.access_token

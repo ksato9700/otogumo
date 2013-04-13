@@ -49,6 +49,7 @@ describe 'Oauth', ->
         assert.equal client.access_token, 'my-access-token'
         assert.equal client.refresh_token, 'my-refresh-token'
         assert.isUndefined client.expires_in
+        assert.isUndefined client.expires
         assert.isUndefined client.scope
         done()
 
@@ -64,14 +65,14 @@ describe 'Oauth', ->
           grant_type: 'password')
       .reply 200,
           access_token: 'my-access-token'
-          expires_in: 'my-expires-in'
+          expires_in: 1000
           refresh_token: 'my-refresh-token'
           scope: SCOPE
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
       client.get_token_by_credentials USERNAME, PASSWORD, (err)->
         assert.isNull err
         assert.equal client.access_token, 'my-access-token'
-        assert.equal client.expires_in, 'my-expires-in'
+        assert.ok client.expires > new Date()
         assert.equal client.refresh_token, 'my-refresh-token'
         assert.equal client.scope, SCOPE
         done()
@@ -83,7 +84,7 @@ describe 'Oauth', ->
       .reply 401,
           error: 'invalid_client'
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
-      client.get_token_by_credentials USERNAME, PASSWORD, (err)->
+      client.get_token_by_credentials USERNAME, 'wrong password', (err)->
         assert.equal err.error, 'invalid_client'
         done()
 

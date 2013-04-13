@@ -3,12 +3,24 @@
 # 
 request = require 'request'
 qs = require 'querystring'
+levelup = require 'levelup'
+async = require 'async'
+crypto = require 'crypto'
 
 AUTHZ_URL = 'https://soundcloud.com/connect'
 API_URL_BASE = 'https://api.soundcloud.com'
 
+hashed_credential = (username, password)->
+  md5sum = crypto.createHash 'md5'
+  md5sum.update username+password, 'ascii'
+  return md5sum.digest 'hex'
+
+cache = null
+
 class Client
   constructor: (@client_id, @client_secret)->
+    if not cache
+      cache = levelup './cache'
 
   _make_request: (url, options, cb)->
     request url, options, (err, resp, body)=>
@@ -42,9 +54,15 @@ class Client
     @_api_post '/oauth2/token', args, (err, data)=>
       if not err
         @access_token = data.access_token
-        @expires_in = data.expires_in
+        if data.expires_in
+          @expires = new Date(new Date().getTime() + data.expires_in*1000)
         @scope = data.scope
         @refresh_token = data.refresh_token
+
+        if args.username and args.password
+          credential = hashed_credential args.username, args.password
+          @_store_cache credential, cb
+          return
       cb err
 
   exchange_token: (code, redirect_uri, cb)->
@@ -58,11 +76,22 @@ class Client
       proxies: null
     @_set_token args, cb
 
-  get_token_by_credentials: (username, password, scope, cb)->
-    if typeof scope is 'function'
-      cb = scope
-      scope = null
+  _store_cache:  (credential, cb)->
+    cache.batch [
+      {type:'put',key:credential+'access_token', value: @access_token},
+      {type:'put',key:credential+'expires', value: @expires.toString()},
+      {type:'put',key:credential+'refresh_token', value: @refresh_token}
+    ], (err)->
+      cb err
+    
+  _lookup_cache: (credential, cb)->
+    async.map ['access_token','expires','refresh_token'], (item, callback)->
+      cache.get credential+item, callback
+    , (err, results)->
+      results[1] = new Date results[1]
+      cb err, results
 
+  _do_get_token_by_credentials: (username, password, scope, cb)->
     args =
       client_id: @client_id
       client_secret: @client_secret
@@ -71,6 +100,22 @@ class Client
       scope: scope || ''
       grant_type: 'password'
     @_set_token args, cb
+
+  get_token_by_credentials: (username, password, scope, cb)->
+    if typeof scope is 'function'
+      cb = scope
+      scope = null
+
+    credential = hashed_credential username, password
+    @_lookup_cache credential, (err, data)=>
+      if err
+        if err.name == 'NotFoundError'
+          @_do_get_token_by_credentials username, password, scope, cb
+        else
+          cb err
+      else
+        [@access_token, @expires, @refresh_token] = data
+        cb null
 
   get_me: (cb)->
     if not @access_token

@@ -16,6 +16,8 @@
     "nock": "~0.16.0"
   },
   "dependencies": {
-    "request": "~2.16.2"
+    "request": "~2.16.6",
+    "levelup": "~0.6.2",
+    "async": "~0.2.7"
   }
 }
