@@ -12,10 +12,17 @@ client = new otogumo.Client client_id, client_secret
 username = process.argv[2]
 password = process.argv[3]
 
-client.get_token_by_credentials username, password, (err)->
-  console.log client.access_token
-  client.get_me (err, data)->
-    console.log data.full_name
+#url = 'http://soundcloud.com/forss/flickermood'
+url = 'http://soundcloud.com/ksato9700/bamboo-forest'
+
+otogumo.get_oembed url, (err, data)->
+  console.log err
+  console.log data.html
+
+# client.get_token_by_credentials username, password, (err)->
+#   console.log client.access_token
+#   client.get_me (err, data)->
+#     console.log data.full_name
 
 # console.log client.authorize_url(redirect_uri)
 
