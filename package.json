@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "request": "~2.27.0",
-    "levelup": "~0.7.1",
+    "levelup": "~0.15.0",
     "async": "~0.2.9"
   }
 }
