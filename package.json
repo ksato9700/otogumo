@@ -4,7 +4,7 @@
   "description": "soundcloud API library for node.js",
   "main": "index.js",
   "scripts": {
-    "prepublish": "grunt coffee",
+    "prepublish": "./node_modules/.bin/coffee -c -o lib/ src/*.coffee",
     "test": "./node_modules/.bin/mocha test/test_*.coffee"
   },
   "repository": "https://github.com/ksato9700/otogumo.git",
