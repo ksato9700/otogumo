@@ -4,6 +4,7 @@
   "description": "soundcloud API library for node.js",
   "main": "index.js",
   "scripts": {
+    "prepublish": "grunt coffee",
     "test": "./node_modules/.bin/mocha test/test_*.coffee"
   },
   "repository": "https://github.com/ksato9700/otogumo.git",
@@ -11,14 +12,17 @@
   "license": "BSD",
   "devDependencies": {
     "coffee-script": "~1.6.3",
-    "mocha": "~1.12.0",
-    "chai": "~1.7.2",
-    "nock": "~0.22.1"
+    "mocha": "~1.13.0",
+    "chai": "~1.8.1",
+    "nock": "~0.22.1",
+    "grunt": "~0.4.1",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-coffee": "~0.7.0"
   },
   "dependencies": {
     "request": "~2.27.0",
     "levelup": "~0.15.0",
     "async": "~0.2.9",
-    "leveldown": "~0.8.0"
+    "leveldown": "~0.8.3"
   }
 }
