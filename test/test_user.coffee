@@ -1,7 +1,7 @@
 #
 # Copyright 2013 Kenichi Sato
 # 
-otogumo = require '../src/otogumo'
+otogumo = require '../lib/otogumo'
 
 mocha = require 'mocha'
 assert = require('chai').assert
