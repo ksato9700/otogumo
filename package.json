@@ -1,28 +1,21 @@
 {
   "name": "otogumo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "soundcloud API library for node.js",
-  "main": "index.js",
+  "main": "lib/co-otogumo.js",
   "scripts": {
-    "prepublish": "./node_modules/.bin/coffee -c -o lib/ src/*.coffee",
-    "test": "rm -rf cache ; ./node_modules/.bin/mocha test/test_*.coffee"
+    "test": "rm -rf cache ; ./node_modules/.bin/mocha --harmony test/test_*.js"
   },
   "repository": "https://github.com/ksato9700/otogumo.git",
   "author": "Kenichi Sato",
   "license": "BSD",
   "devDependencies": {
-    "coffee-script": "~1.6.3",
     "mocha": "~1.16.2",
     "chai": "~1.8.1",
     "nock": "~0.27.1",
-    "grunt": "~0.4.2",
-    "grunt-contrib-watch": "~0.5.3",
-    "grunt-contrib-coffee": "~0.8.0"
+    "co": "~3.0.2"
   },
   "dependencies": {
-    "request": "~2.30.0",
-    "levelup": "~0.18.2",
-    "async": "~0.2.9",
-    "leveldown": "~0.10.2"
+    "co-request": "~0.1.1"
   }
 }
