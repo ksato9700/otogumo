@@ -1,11 +1,12 @@
 #
 # Copyright 2013 Kenichi Sato
-# 
+#
 request = require 'request'
 qs = require 'querystring'
 levelup = require 'levelup'
-async = require 'async'
 crypto = require 'crypto'
+
+require('es6-promise').polyfill()
 
 AUTHZ_URL = 'https://soundcloud.com/connect'
 API_URL_BASE = 'https://api.soundcloud.com'
@@ -21,31 +22,40 @@ cache = null
 #
 # utility functions
 #
-_make_request = (url, options, cb)->
-  request url, options, (err, resp, body)=>
-    if err
-      cb err
-    else
-      body = JSON.parse body
-      if resp.statusCode isnt 200
-        cb body
+_make_request = (url, options)->
+  new Promise (resolve, reject)->
+    request url, options, (err, resp, body)->
+      if err
+        reject err
       else
-        cb null, body
+        body = JSON.parse body
+        if resp.statusCode isnt 200
+          reject body
+        else
+          resolve body
 
-_api_make_request = (path, options, cb)->
-  _make_request API_URL_BASE + path, options, cb
+_api_make_request = (path, options)->
+  _make_request API_URL_BASE + path, options
 
-_api_get = (path, args, cb)->
-  _api_make_request path, {method: 'GET', qs: args},  cb
+_api_get = (path, args)->
+  _api_make_request path, {method: 'GET', qs: args}
 
-_api_post = (path, args, cb)->
-  _api_make_request path, {method: 'POST', form: args}, cb
+_api_post = (path, args)->
+  _api_make_request path, {method: 'POST', form: args}
 
-get_oembed = (url, cb)->
+_get_cache = (key)->
+  new Promise (resolve, reject)->
+    cache.get key, (err, data)->
+      if err
+        reject err
+      else
+        resolve data
+
+get_oembed = (url)->
   args =
     url: url
     format: 'json'
-  _make_request OEMBED_URL, {method: 'GET', qs: args}, cb
+  _make_request OEMBED_URL, {method: 'GET', qs: args}
 
 #
 # class
@@ -63,22 +73,25 @@ class Client
       redirect_uri: redirect_uri
     return AUTHZ_URL + '?' + qs.stringify options
 
-  _set_token: (args, cb)->
-    _api_post '/oauth2/token', args, (err, data)=>
-      if not err
-        @access_token = data.access_token
-        if data.expires_in
-          @expires = new Date(new Date().getTime() + data.expires_in*1000)
-        @scope = data.scope
-        @refresh_token = data.refresh_token
+  _set_token: (args)->
+    _api_post('/oauth2/token', args)
+    .then (data)=>
+      @access_token = data.access_token
+      if data.expires_in
+        @expires = new Date(new Date().getTime() + data.expires_in*1000)
+      @scope = data.scope
+      @refresh_token = data.refresh_token
 
-        if args.username and args.password
-          credential = hashed_credential args.username, args.password
-          @_store_cache credential, cb
-          return
-      cb err
+      if args.username and args.password
+        credential = hashed_credential args.username, args.password
+        return @_store_cache credential
+      else
+        return Promise.resolve()
 
-  exchange_token: (code, redirect_uri, cb)->
+    .catch (error)->
+      Promise.reject error
+
+  exchange_token: (code, redirect_uri)->
     args =
       grant_type: 'authorization_code'
       redirect_uri: redirect_uri
@@ -87,24 +100,32 @@ class Client
       code: code
       verify_ssl: true
       proxies: null
-    @_set_token args, cb
+    @_set_token args
 
-  _store_cache:  (credential, cb)->
-    cache.batch [
-      {type:'put',key:credential+'access_token', value: @access_token},
-      {type:'put',key:credential+'expires', value: @expires.toString()},
-      {type:'put',key:credential+'refresh_token', value: @refresh_token}
-    ], (err)->
-      cb err
-    
-  _lookup_cache: (credential, cb)->
-    async.map ['access_token','expires','refresh_token'], (item, callback)->
-      cache.get credential+item, callback
-    , (err, results)->
+  _store_cache:  (credential)->
+    batch = cache.batch()
+      .put(credential+'access_token', @access_token)
+      .put(credential+'refresh_token', @refresh_token)
+    if @expires
+      batch.put(credential+'expires', @expires.toString())
+
+    batch.write (err)->
+      if err
+        Promise.reject err
+      else
+        Promise.resolve()
+
+  _lookup_cache: (credential)->
+    Promise.all(['access_token','expires','refresh_token']
+      .map((key)->credential+key)
+      .map(_get_cache))
+    .then (results)->
       results[1] = new Date results[1]
-      cb err, results
+      Promise.resolve results
+    .catch (error)->
+      Promise.reject error
 
-  _do_get_token_by_credentials: (username, password, scope, cb)->
+  _do_get_token_by_credentials: (username, password, scope)->
     args =
       client_id: @client_id
       client_secret: @client_secret
@@ -112,29 +133,25 @@ class Client
       password: password
       scope: scope || ''
       grant_type: 'password'
-    @_set_token args, cb
+    @_set_token args
 
-  get_token_by_credentials: (username, password, scope, cb)->
-    if typeof scope is 'function'
-      cb = scope
-      scope = null
-
+  get_token_by_credentials: (username, password, scope)->
     credential = hashed_credential username, password
-    @_lookup_cache credential, (err, data)=>
-      if err
-        if err.name == 'NotFoundError'
-          @_do_get_token_by_credentials username, password, scope, cb
-        else
-          cb err
+    @_lookup_cache credential
+    .then (data)=>
+      [@access_token, @expires, @refresh_token] = data
+      Promise.resolve()
+    .catch (error)=>
+      if error.name == 'NotFoundError'
+        return @_do_get_token_by_credentials username, password, scope
       else
-        [@access_token, @expires, @refresh_token] = data
-        cb()
+        Promise.reject error
 
-  get_me: (cb)->
+  get_me: ->
     if not @access_token
-      cb 'need to auth first'
-      return
-    _api_get '/me.json', {oauth_token: @access_token}, cb
+      Promise.reject 'need to auth first'
+    else
+      _api_get '/me.json', {oauth_token: @access_token}
 
 exports.Client = Client
 exports.get_oembed = get_oembed

@@ -1,6 +1,6 @@
 #
 # Copyright 2013 Kenichi Sato
-# 
+#
 otogumo = require '../lib/otogumo'
 
 mocha = require 'mocha'
@@ -16,7 +16,7 @@ SCOPE = undefined
 
 describe 'User', ->
   describe 'get_me', ->
-    it 'should get my account information', (done)->
+    it 'should get my account information', ->
       server = nock "https://api.soundcloud.com"
       server.get("/me.json?oauth_token=my-access-token")
       .reply 200,
@@ -39,17 +39,16 @@ describe 'User', ->
 
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
 
-      client.get_token_by_credentials USERNAME, PASSWORD, (err)->
-        assert.isUndefined err
-        client.get_me (err, data)->
-          assert.isNull err
+      client.get_token_by_credentials USERNAME, PASSWORD
+      .then ->
+        client.get_me()
+        .then (data)->
           assert.equal data.id, 1234567890
           assert.equal data.kind, 'user'
           assert.equal data.permalink, 'my-permalink'
           assert.equal data.username, 'my-username'
-          done()
 
-    it 'should fail if it was not authenticated', (done)->
+    it 'should fail if it was not authenticated', ->
       server = nock "https://api.soundcloud.com"
       server.get("/me.json?oauth_token=my-access-token")
       .reply 200,
@@ -60,8 +59,8 @@ describe 'User', ->
 
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
 
-      client.get_me (err, data)->
-        assert.isString err
-        assert.isUndefined data
-        done()
-
+      client.get_me()
+      .then (data)->
+        assert.fail()
+      ,(error)->
+        assert.equal error, 'need to auth first'

@@ -1,6 +1,6 @@
 #
 # Copyright 2013 Kenichi Sato
-# 
+#
 otogumo = require '../lib/otogumo'
 
 mocha = require 'mocha'
@@ -17,7 +17,7 @@ REDIRECT_URI = 'http://example.com/redirect'
 
 describe 'Oauth', ->
   describe 'authorize_url', ->
-    it 'should get authorize URL', (done)->
+    it 'should get authorize URL', ->
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
       authz_url = client.authorize_url REDIRECT_URI
       assert.isString authz_url
@@ -26,10 +26,9 @@ describe 'Oauth', ->
       assert.equal options.client_id, CLIENT_ID
       assert.equal options.response_type, 'code'
       assert.equal options.redirect_uri, REDIRECT_URI
-      done()
 
   describe 'exchange_token', ->
-    it 'should exchange authorization_code with access_token', (done)->
+    it 'should exchange authorization_code with access_token', ->
       code = 'my-authorization-code'
       server = nock "https://api.soundcloud.com"
       server.post("/oauth2/token", qs.stringify
@@ -44,17 +43,17 @@ describe 'Oauth', ->
         access_token: 'my-access-token'
         refresh_token: 'my-refresh-token'
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
-      client.exchange_token code, REDIRECT_URI, (err)->
-        assert.isNull err
+
+      client.exchange_token code, REDIRECT_URI
+      .then ->
         assert.equal client.access_token, 'my-access-token'
         assert.equal client.refresh_token, 'my-refresh-token'
         assert.isUndefined client.expires_in
         assert.isUndefined client.expires
         assert.isUndefined client.scope
-        done()
 
   describe 'get_token_by_credentials', ->
-    it 'should get access token by a credential', (done)->
+    it 'should get access token by a credential', ->
       server = nock "https://api.soundcloud.com"
       server.post("/oauth2/token", qs.stringify
           client_id: CLIENT_ID
@@ -69,25 +68,22 @@ describe 'Oauth', ->
           refresh_token: 'my-refresh-token'
           scope: SCOPE
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
-      client.get_token_by_credentials USERNAME, PASSWORD, (err)->
-        assert.isUndefined err
+      client.get_token_by_credentials USERNAME, PASSWORD
+      .then ->
         assert.equal client.access_token, 'my-access-token'
         assert.ok client.expires > new Date()
         assert.equal client.refresh_token, 'my-refresh-token'
         assert.equal client.scope, SCOPE
-        done()
 
-    it 'should handle error response properly', (done)->
+    it 'should handle error response properly', ->
       server = nock "https://api.soundcloud.com"
       server.filteringRequestBody(/.*/, '*')
       .post("/oauth2/token", '*')
       .reply 401,
           error: 'invalid_client'
       client = new otogumo.Client CLIENT_ID, CLIENT_SECRET
-      client.get_token_by_credentials USERNAME, 'wrong password', (err)->
-        assert.equal err.error, 'invalid_client'
-        done()
-
-
-
-
+      client.get_token_by_credentials USERNAME, 'wrong password'
+      .then (data)->
+        assert.fail()
+      ,(error)->
+        assert.equal error.error, 'invalid_client'
