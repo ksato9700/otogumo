@@ -1,9 +1,9 @@
 #
-# Copyright 2013 Kenichi Sato
+# Copyright 2013-2015 Kenichi Sato
 # 
 request = require 'request'
 qs = require 'querystring'
-levelup = require 'levelup'
+level = require 'level'
 async = require 'async'
 crypto = require 'crypto'
 
@@ -53,7 +53,7 @@ get_oembed = (url, cb)->
 class Client
   constructor: (@client_id, @client_secret)->
     if not cache
-      cache = levelup './cache'
+      cache = level './cache'
 
   authorize_url: (redirect_uri)->
     options =
